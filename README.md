@@ -1,6 +1,6 @@
 # Practical Fault Detection in Puppet Programs
 
-This repository contains (code will be added in a coumple of hours)
+This repository contains (code will be added in a couple of hours)
 the implementation of an approach that detects faults in Puppet programs including
 missing ordering relationships and missing notifiers.
 The full decription of this framework will appear at the
