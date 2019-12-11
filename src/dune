@@ -1,0 +1,14 @@
+(include_subdirs unqualified)
+
+(library
+  (name fsmove)
+  (modules (:standard \ main))
+  (libraries core yojson ppx_jane ppx_let str)
+  (preprocess (pps ppx_jane)))
+
+(executable
+  (name main)
+  (public_name fsmove)
+  (modules main)
+  (libraries fsmove)
+  (preprocess (pps ppx_jane)))
