@@ -4,7 +4,7 @@
 for identifying faults involving ordering violations
 missing notifiers in Puppet programs.
 To do so, it records the system call trace produced by
-the execution of a Puppet manifest.
+the execution of a Puppet manifest through [strace](https://strace.io/).
 Then, it operates as follows.
 First, `FSMove` models the system call trace of
 a Puppet execution in a representation
