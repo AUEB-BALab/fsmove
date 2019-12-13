@@ -1,3 +1,5 @@
+![Build status](https://api.travis-ci.org/AUEB-BALab/fsmove.svg?branch=master)
+
 # FSMove
 
 `FSMove` is a practical and effective approach
