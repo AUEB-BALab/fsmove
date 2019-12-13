@@ -3,7 +3,8 @@ sudo: required
 env:
     - OCAML_VERSION=4.05.0
 cache:
-    - apt
+    directories:
+        - ${HOME}/.opam
 before_install:
     - sudo apt update
     - sudo apt install opam m4 -y
