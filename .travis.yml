@@ -7,8 +7,7 @@ cache:
 before_install:
     - sudo apt update
     - sudo apt install opam m4 -y
-    - opam init -y
-    - opam switch ${OCAML_VERSION}
+    - opam init --compiler ${OCAML_VERSION} -y
     - eval `opam config env`
 install:
     - opam install -y ppx_jane core yojson dune ounit
