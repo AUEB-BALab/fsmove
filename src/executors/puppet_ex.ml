@@ -18,17 +18,32 @@
 open Pervasives
 
 
-exception Timeout
+type mode =
+  | Online
+  | Offline
 
 
-(* Default modulepath. *)
-let modulepath = "/etc/puppet/code/modules"
+type options =
+  {mode: mode;
+   manifest: string option;
+   modulepath: string option;
+   package_notify: bool;
+   graph_file: string option;
+   graph_format: Dependency_graph.graph_format;
+   print_stats: bool;
+   trace_file: string option;
+   dump_puppet_out: string option;
+  }
 
-(* Default timeout in seconds. *)
-let default_timeout = 360
+
+type read_point =
+  | File of string
+  | FileDesc of Unix.file_descr
 
 
-let timeout_status_code = 253
+type option_status =
+  | Ok
+  | Err of string
 
 
 let child_failed_status_code = 255
@@ -42,39 +57,36 @@ let string_of_unix_err err call params =
   Printf.sprintf "%s: %s (%s)" (Unix.error_message err) call params
 
 
-let read_buff output =
-  (* We read the buffer from the output file descriptor;
-   20 bytes at a time. *)
-  let len = 20 in
-  let buff = Bytes.create len in
-  let rec _read_buf acc buff =
-    match Unix.read output buff 0 len with
-    | 0 -> acc
-    | n ->
-      let acc' = acc ^ (String.sub buff 0 n) in
-      _read_buf acc' buff
+let validate_options = function
+  | { mode = Online; manifest = None; _} ->
+    Err "Mode 'online' requires the option '-manifest.'"
+  | { mode = Online; modulepath = None; _ } ->
+    Err "Mode 'online' requires the option '-modulepath'"
+  | { mode = Offline; manifest = Some _; _ } ->
+    Err "Option `-manifest` is only compatiable with the mode 'online'"
+  | { mode = Offline; modulepath = Some _; _ } ->
+    Err "Option `-modulepath` is only compatiable with the mode 'online'"
+  | { mode = Offline; dump_puppet_out = Some _; _ } ->
+    Err "Option `-dump-puppet-out` is only compatiable with the mode 'online'"
+  | { mode = Offline; trace_file = None; _ } ->
+    Err "Mode 'offline' requires the option '-trace-file.'"
+  | _ -> Ok
+
+
+let run_strace_and_puppet manifest modulepath input puppet_out =
+  let modulepath =
+    match modulepath with
+    | None            -> "/etc/puppet/code/modules"
+    | Some modulepath -> modulepath
   in
-  _read_buf "" buff
-
-
-let timeout f time default_value =
-  Sys.set_signal Sys.sigalrm (Sys.Signal_handle (fun _ -> raise Timeout));
-  ignore(Unix.alarm time);
-  try
-    f ()
-  with
-  | Timeout -> default_value
-  | exc     -> raise exc
-
-
-let run_strace_and_puppet trace_file manifest modulepath input =
   let prog = "/usr/bin/strace" in
+  let fd_out = input |> Fd_send_recv.int_of_fd |> string_of_int in
   let args = [|
     "strace";
     "-s";
     "300";
     "-o";
-    trace_file;
+    ("/dev/fd/" ^ fd_out);
     "-f";
     "puppet";
     "apply";
@@ -85,6 +97,16 @@ let run_strace_and_puppet trace_file manifest modulepath input =
     "--evaltrace"; |]
   in
   try
+    print_endline ("Start executing manifest " ^ manifest ^ " ...");
+    let out =
+      match puppet_out with
+      | None            -> "/dev/null"
+      | Some puppet_out -> puppet_out
+    in
+    let fd = Unix.openfile out [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o640 in
+    let _ = Unix.dup2 fd Unix.stdout in
+    let _ = Unix.dup2 fd Unix.stderr in
+    let _ = Unix.close fd in
     ignore (Unix.execv prog args);
     exit 254; (* We should never reach here. *)
   with Unix.Unix_error (err, call, params) ->
@@ -99,43 +121,58 @@ let run_strace_and_puppet trace_file manifest modulepath input =
     end
 
 
-let run_manifest ?(modulepath=modulepath) ?(proc_timeout=default_timeout) manifest trace_file =
+let analyze_trace_internal read_p catalog debug_trace_file options =
+  let module PuppetParser = Sys_parser.Make(Puppet_parser) in
+  let module PuppetAnalyzer = Analyzer.Make(Puppet) in
+  let open Puppet in
+  let open PuppetAnalyzer in
+  let open PuppetParser in
+  let t0 = Unix.gettimeofday () in
+  let resource_graph, _ =
+    match read_p with
+    | File p     ->
+      p
+      |> parse_trace_file debug_trace_file
+      |> analyze_traces
+    | FileDesc p ->
+      p
+      |> parse_trace_fd debug_trace_file
+      |> analyze_traces
+  in
+  let _ = detect_bugs
+    ~graph_format:options.graph_format
+    ~package_notify:options.package_notify
+    resource_graph catalog options.graph_file
+  in
+  let diff = Unix.gettimeofday () -. t0 in
+  if options.print_stats then begin
+    print_endline ("Analysis time: " ^ (string_of_float diff))
+  end;
+  ()
+
+
+let run_manifest manifest catalog options =
   if not (Sys.file_exists manifest)
   then make_executor_err ("The manifest " ^ manifest ^ " does not exist")
   else
-    let output, input = Unix.pipe() in
+    let output, input = Unix.pipe () in
     (* We create a child process that is responsible for invoking
      strace and run the apply the provided puppet manifest. *)
     match Unix.fork () with
-    | 0   -> run_strace_and_puppet trace_file manifest modulepath input
-    | pid ->
+    | 0   ->
+      Unix.close output;
+      run_strace_and_puppet manifest options.modulepath input options.dump_puppet_out
+    | pid -> (
       Unix.close input;
-      let _, status =
-        (0, Unix.WSIGNALED timeout_status_code)
-        |> timeout Unix.wait proc_timeout
-      in
-      match status with
-      | Unix.WEXITED 0  ->
-        Printf.fprintf stdout
-          "The application of the manifest %s terminated successfully" manifest
-      | Unix.WEXITED 255  ->
-        (** The invocation of strace seems to be failed.
-          So we read the error message from the output pipe. *)
-        let msg = read_buff output in
-        make_executor_err msg
-      | Unix.WEXITED i  ->
-        let msg = "The application of the manifest " ^ manifest
-          ^ " returned with status code " ^ (string_of_int i) in
-        make_executor_err msg
-      | Unix.WSIGNALED 253  ->
-          (* This means that the timeout has elapsed, so it's time to
-            kill the child process. *)
-          Printf.fprintf stdout "Killing process %d\n" pid;
-          Unix.kill pid Sys.sigkill;
-      | Unix.WSTOPPED i
-      | Unix.WSIGNALED i -> (
-        let msg = "The application of the manifest " ^ manifest
-          ^ " stopped with " ^ (string_of_int i) ^ " status code" in
-        make_executor_err msg)
+      analyze_trace_internal
+        (FileDesc output) catalog options.trace_file options;
+      try
+        Unix.kill pid Sys.sigkill;
+        Unix.close output;
+      with Unix.Unix_error _ -> ())
     | exception Unix.Unix_error (err, call, params) ->
       params |> string_of_unix_err err call |> make_executor_err
+
+
+let analyze_trace trace_file catalog options =
+  analyze_trace_internal (File trace_file) catalog None options

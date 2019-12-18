@@ -43,7 +43,7 @@ RUN opam init -y && \
 
 # Install OCaml packages
 RUN eval `opam config env` && \
-    opam install -y ppx_jane core yojson dune ounit
+    opam install -y ppx_jane core yojson dune ounit fd-send-recv
 
 
 RUN sudo apt install procps -y

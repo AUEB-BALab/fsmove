@@ -11,5 +11,5 @@ before_install:
     - opam init --compiler ${OCAML_VERSION} -y
     - eval `opam config env`
 install:
-    - opam install -y ppx_jane core yojson dune ounit
+    - opam install -y ppx_jane core yojson dune ounit fd-send-recv
 script: dune runtest

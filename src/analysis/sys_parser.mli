@@ -46,7 +46,21 @@ module type ToolParserType =
 
 module type S =
   sig
-      val parse_trace_file : string -> Syntax.trace Syntax.stream
+      val parse_trace_fd :
+        string option
+        -> Unix.file_descr
+        -> Syntax.trace Syntax.stream
+      (** Reads strace output from a file descriptor and parses it
+          to produce a stream of traces.
+
+          This file descriptor can correspond to a pipe, so this enables
+          to run the analysis while the Puppet applies the catalog
+          (online analysis). *)
+
+      val parse_trace_file :
+        string option
+        -> string
+        -> Syntax.trace Syntax.stream
       (** Parses a trace file (produced by the strace tool) and
         produces a stream of traces.
 

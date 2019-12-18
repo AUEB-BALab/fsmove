@@ -43,7 +43,12 @@ module type ToolParserType =
 
 module type S =
   sig
-    val parse_trace_file : string -> Syntax.trace Syntax.stream
+    val parse_trace_fd :
+      string option
+      -> Unix.file_descr
+      -> Syntax.trace Syntax.stream
+
+    val parse_trace_file : string option -> string -> Syntax.trace Syntax.stream
   end
 
 
@@ -471,8 +476,7 @@ module Make (T : ToolParserType) = struct
         } in
         Some (construct_syscall sdesc),
         Util.StringPair.remove (pid, v1) map
-      with Not_found ->
-        make_parser_error syscall_line i (Some "Cannot match resumed system call"))
+      with Not_found -> None, map)
     | Some (CoSyscall (v1, v2, Some v3, v4)) ->
       Some (construct_syscall {
         syscall = v1;
@@ -509,20 +513,37 @@ module Make (T : ToolParserType) = struct
     with _ -> make_parser_error line i None
 
 
-  let parse_lines lines map =
+  let write_trace_line out line =
+    match out with
+    | None     -> ()
+    | Some out -> Printf.fprintf out "%s\n" line
+
+  let close_trace_out out =
+    match out with
+    | None     -> ()
+    | Some out -> close_out out
+
+  let parse_lines lines debug_trace_file =
     (* i is just a counter of the current stream.
        Also it indicates the number of the line
        where every trace is located. *)
+    let trace_out =
+      match debug_trace_file with
+      | Some trace_file -> Some (open_out trace_file)
+      | None            -> None
+    in
     let rec _next_trace traces m i () =
       match traces with
       | []               -> (
         match input_line lines with
         | line ->
+          write_trace_line trace_out line;
           if T.stop_parser line
           then
             begin
               (* We don't need to analyze more traces *)
               close_in lines;
+              close_trace_out trace_out;
               Empty
           end
           else (
@@ -533,21 +554,30 @@ module Make (T : ToolParserType) = struct
             | None, map'        -> _next_trace [] map' (i + 1) ())
         | exception End_of_file ->
           close_in lines;
+          close_trace_out trace_out;
           Empty
         | exception Error v ->
           close_in lines;
+          close_trace_out trace_out;
           raise (Error v)
         | exception v ->
           close_in lines;
+          close_trace_out trace_out;
           let msg = Printexc.to_string v in
           raise (Error (InternalError, Some msg)))
       | trace :: traces' ->
         Stream (trace, _next_trace traces' m i)
-    in _next_trace [] map 1 ()
+    in _next_trace [] Util.StringPair.empty 1 ()
 
 
-  let parse_trace_file filename =
-    match parse_lines (open_in filename) Util.StringPair.empty with
+  let parse_trace_fd debug_trace_file fd =
+    match parse_lines (Unix.in_channel_of_descr fd) debug_trace_file with
+    | traces                  -> traces
+    | exception Sys_error msg -> raise (Error (GenericError, Some msg))
+
+
+  let parse_trace_file debug_trace_file filename =
+    match parse_lines (open_in filename) debug_trace_file with
     | traces                  -> traces
     | exception Sys_error msg -> raise (Error (GenericError, Some msg))
 end

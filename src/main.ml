@@ -32,8 +32,7 @@ let handle_error err msg =
     end
 
 
-let format_of_string str =
-  match str with
+let format_of_string = function
   | "dot" -> Dependency_graph.Dot
   | "csv" -> Dependency_graph.Csv
   | _     ->
@@ -43,90 +42,77 @@ let format_of_string str =
     end
 
 
-let puppet trace_file catalog graph_file graph_format print_time package_notify =
-  let module PuppetParser = Sys_parser.Make(Puppet_parser) in
-  let module PuppetAnalyzer = Analyzer.Make(Puppet) in
-  let open Puppet in
-  let open PuppetAnalyzer in
-  let open PuppetParser in
-  let t0 = Unix.gettimeofday () in
-  try
-    let resource_graph, _ = trace_file
-      |> parse_trace_file
-      |> analyze_traces
-    in
-    detect_bugs ~graph_format ~package_notify resource_graph catalog graph_file;
-    let diff = Unix.gettimeofday () -. t0 in
-    if print_time then begin
-      print_string
-        ("Analysis time: " ^ (string_of_float diff) ^ "\n")
-    end;
-  with
-  | Errors.Error (err, msg) -> handle_error err msg
+let mode_of_string = function
+  | "online"  -> Puppet_ex.Online
+  | "offline" -> Puppet_ex.Offline
+  | _         ->
+    begin
+      Printf.eprintf "Mode must be either 'online' or 'offline'";
+      exit 1;
+    end
 
 
-let puppet_ex trace_file manifest modulepath timeout =
-  try
-    Puppet_ex.run_manifest manifest trace_file ~modulepath ~proc_timeout: timeout
-  with Errors.Error (err, msg) -> handle_error err msg
+let puppet_ex catalog options =
+  match Puppet_ex.validate_options options with
+  | Err err ->
+    Printf.eprintf "Error: %s. Run command with -help" err;
+    exit 1
+  | Ok ->
+    try
+      match options with
+      | { mode = Online; manifest = Some manifest; } ->
+        Puppet_ex.run_manifest manifest catalog options
+      | { mode = Offline; trace_file = Some trace_file; } ->
+        Puppet_ex.analyze_trace trace_file catalog options
+      | _ ->
+        raise (Errors.Error (Errors.InternalError, (Some "Unreachable case")))
+    with Errors.Error (err, msg) -> handle_error err msg
 
 
-let analyze_cmd =
+let () =
   let open Core.Command.Let_syntax in
   Core.Command.basic
-    ~summary:"Detects Missing Ordering Relationships (MOR) and Missing Notifiers (MN) in Puppet Programs"
+    ~summary:"Applies a Puppet Manifest and collects its system call trace."
     [%map_open
-    let trace_file =
-      flag "traces" (required string)
-      ~doc:"Path to trace file produced by the 'strace' tool."
-    and catalog =
+    let catalog =
       flag "catalog" (required string)
-      ~doc: "Path to the compiled catalog."
+      ~doc:"Path to compiled catalog of manifest."
+    and mode =
+      flag "mode" (required (Arg_type.create mode_of_string))
+      ~doc: "Analysis mode; either online or offline"
+    and manifest =
+      flag "manifest" (optional string)
+      ~doc: "Path to the manifest that we need to apply. (Avaiable only when mode is 'online')"
+    and modulepath =
+      flag "modulepath" (optional string)
+      ~doc: "Path to the directory of the Puppet modules. (Available only when mode is 'online')"
+    and trace_file =
+      flag "trace-file" (optional string)
+      ~doc:"Path to trace file produced by the 'strace' tool. (Available only when mode is 'offline')"
+    and dump_puppet_out =
+      flag "dump-puppet-out" (optional string)
+      ~doc: "File to store output from puppet execution (for debugging only)"
     and graph_format =
       flag "graph-format" (optional_with_default Dependency_graph.Dot (Arg_type.create format_of_string))
       ~doc: "Format for storing the dependency graph of the provided Puppet manifests."
     and graph_file =
       flag "graph-file" (optional string)
       ~doc: "File to store the dependency graph inferred by the compiled catalog."
-    and print_time =
-      flag "print-time" (no_arg)
-      ~doc: "Print analysis times"
+    and print_stats =
+      flag "print-stats" (no_arg)
+      ~doc: "Print stats about execution and analysis"
     and package_notify =
       flag "package-notify" (no_arg)
       ~doc: "Consider missing notifiers from packages to services"
     in
     fun () ->
-      puppet trace_file catalog graph_file graph_format print_time package_notify
-    ]
-
-
-let execute_cmd =
-  let open Core.Command.Let_syntax in
-  Core.Command.basic
-    ~summary:"Applies a Puppet Manifest and collects its system call trace."
-    [%map_open
-    let trace_file =
-      flag "traces" (required string)
-      ~doc:"Path to trace file produced by the 'strace' tool."
-    and manifest =
-      flag "manifest" (required string)
-      ~doc: "Path to the manifest that we need to apply."
-    and modulepath =
-      flag "modulepath" (optional_with_default "/etc/puppet/code/modules" string)
-      ~doc: "Path to the directory of the Puppet modules."
-    and timeout =
-      flag "timeout" (optional_with_default 300 int)
-      ~doc: "Timeout for the application of the Puppet manifests."
-    in
-    fun () ->
-      puppet_ex trace_file manifest modulepath timeout
-    ]
-
-
-let () =
-  Core.Command.group
-    ~summary:"Detecting missing dependencies and notifiers in Puppet programs"
-    [
-      "analyze", analyze_cmd;
-      "execute", execute_cmd;
+      {Puppet_ex.trace_file = trace_file;
+       Puppet_ex.manifest = manifest;
+       Puppet_ex.dump_puppet_out = dump_puppet_out;
+       Puppet_ex.mode = mode;
+       Puppet_ex.graph_file = graph_file;
+       Puppet_ex.graph_format = graph_format;
+       Puppet_ex.print_stats = print_stats;
+       Puppet_ex.package_notify = package_notify;
+       Puppet_ex.modulepath = modulepath;} |> puppet_ex catalog
     ] |> Core.Command.run

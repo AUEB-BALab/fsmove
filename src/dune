@@ -3,7 +3,7 @@
 (library
   (name fsmove)
   (modules (:standard \ main))
-  (libraries core yojson ppx_jane ppx_let str)
+  (libraries core yojson ppx_jane ppx_let str fd-send-recv)
   (preprocess (pps ppx_jane)))
 
 (executable

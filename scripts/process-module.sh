@@ -135,10 +135,11 @@ function analyze_traces()
     eval `opam config env`
     for i in {1..$iterations}
     do
-      fsmove analyze -print-time \
+      fsmove -print-stats \
+        -mode offline \
         -package-notify \
         -catalog $basedir/$module.json \
-        -traces $basedir/$module.strace > $basedir/output 2> $basedir/err
+        -trace-file $basedir/$module.strace > $basedir/output 2> $basedir/err
       if [ $? -ne 0 ]; then
         return 2
       fi

@@ -59,7 +59,7 @@ let to_file ctx str =
 let assert_traces ctx str traces =
   str
   |> to_file ctx
-  |> parse_trace_file 
+  |> parse_trace_file None
   |> list_of_traces
   |> List.map (fun (pid, (con, _)) -> pid, con)
   |> assert_equal traces
@@ -290,10 +290,9 @@ let test_invalid_trace ctx =
   in
   assert_raises_parser_error "dfa";
   assert_raises_parser_error "10 syscall malformed (\"fdaf\") = 0";
-  assert_raises_parser_error "10 syscall (\"fdaf\")";
-  assert_raises_parser_error "10 chdir( <unfinished ...>\n11 <... chdir resumed> \"/foo\") = 0"
+  assert_raises_parser_error "10 syscall (\"fdaf\")"
 
 
 let test_invalid_file _ =
-  (fun _ -> parse_trace_file "foo")
+  (fun _ -> parse_trace_file None "foo")
   |> assert_raises (Error (GenericError, Some "foo: No such file or directory"))
