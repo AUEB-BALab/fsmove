@@ -62,6 +62,7 @@ let is_exec resource =
 
 let adapt_effect resource effect =
   match (effect, Puppet_util.extract_file_title resource) with
+  | Domains.Write v, Some pathname
   | Domains.Read v, Some pathname
   | Domains.Touch v, Some pathname ->
     if Util.string_contains v pathname 
