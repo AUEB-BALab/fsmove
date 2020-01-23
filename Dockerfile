@@ -43,7 +43,7 @@ RUN opam init -y && \
 
 # Install OCaml packages
 RUN eval `opam config env` && \
-    opam install -y ppx_jane core yojson dune ounit fd-send-recv
+    opam install -y ppx_jane core yojson dune ounit fd-send-recv fpath
 
 
 RUN sudo apt install procps -y
@@ -76,6 +76,7 @@ RUN echo "[main]" > ${PUPPET_CONF_FILE} && \
     echo "rundir=/var/run/puppet" >> ${PUPPET_CONF_FILE}
 
 
+RUN cp ${HOME}/.opam/4.05.0/bin/fsmove /usr/local/bin
 USER fsmove
 WORKDIR ${HOME}
 

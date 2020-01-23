@@ -72,6 +72,7 @@ module Make (T : ToolParserType) = struct
   let regex_syscall = regexp ("\\([a-z0-9_]+\\)(\\(.*\\))" ^ ret_value_pattern)
   let regex_syscall_unfin = regexp "\\([a-z0-9_?]+\\)(\\(.*\\)[ ]+<unfinished ...>"
   let regex_syscall_resum = regexp ("<...[ ]+\\([a-z0-9_?]+\\)[ ]+resumed>[ ]*\\(.*\\))" ^ ret_value_pattern)
+  let dslash_regex = regexp "//"
 
   let syscall_group = 1
   let args_group = 2
@@ -139,7 +140,15 @@ module Make (T : ToolParserType) = struct
            e.g. open(0x7f3bbdf504ff, O_RDONLY). *)
     else if is_address pathname_str
     then Some (Syntax.Unknown "/UNKNOWN")
-    else Some (Syntax.Path (strip_quotes pathname_str))
+    else Some (Syntax.Path (
+      pathname_str
+      |> strip_quotes
+      |> Str.global_replace dslash_regex "/"
+      |> Fpath.v
+      |> Fpath.normalize
+      |> Fpath.rem_empty_seg
+      |> Fpath.to_string))
+
 
 
   let extract_fd_pathname d_index p_index args =
