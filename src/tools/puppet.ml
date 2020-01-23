@@ -176,7 +176,6 @@ let partition_bugs bugs =
 
 
 let report_bug_details bugs =
-  Printf.printf "# Faults: %d\n" (AbPair.cardinal bugs);
   print_string "Pairs:\n";
   let _ = AbPair.fold (fun (x, y) z i ->
     let report = String.concat "" [
@@ -201,19 +200,21 @@ let report_bug_details bugs =
 let report_bugs bugs =
   let mor_title = "Missing Ordering Relationships:\n===============================\n" in
   let mn_title = "Missing Notifiers:\n==================\n" in
-  let _report_bugs title bugs =
+  let _report_bugs title bug_type bugs =
     if AbPair.cardinal bugs <> 0
     then
+      let n_bugs = bugs |> AbPair.cardinal |> string_of_int in
       begin
         print_string title;
+        print_endline ("Number of " ^ bug_type ^ ": " ^ n_bugs);
         report_bug_details bugs;
       end
     else ()
   in
   let mors, mns = partition_bugs bugs in
   begin
-    _report_bugs mor_title mors;
-    _report_bugs mn_title mns;
+    _report_bugs mor_title "MOR" mors;
+    _report_bugs mn_title "MN" mns;
   end
 
 
