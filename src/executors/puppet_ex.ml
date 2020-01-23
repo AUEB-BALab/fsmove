@@ -73,6 +73,56 @@ let validate_options = function
   | _ -> Ok
 
 
+let syscalls = [
+  "access";
+  "chdir";
+  "chmod";
+  "chown";
+  "clone";
+  "close";
+  "dup";
+  "dup2";
+  "dup3";
+  "execve";
+  "fchdir";
+  "fchmodat";
+  "fchownat";
+  "fcntl";
+  "fork";
+  "getxattr";
+  "getcwd";
+  "lchown";
+  "lgetxattr";
+  "lremovexattr";
+  "lsetxattr";
+  "lstat";
+  "link";
+  "linkat";
+  "mkdir";
+  "mkdirat";
+  "mknod";
+  "open";
+  "openat";
+  "readlink";
+  "readlinkat";
+  "removexattr";
+  "rename";
+  "renameat";
+  "rmdir";
+  "statfs";
+  "symlink";
+  "symlinkat";
+  "unlink";
+  "unlinkat";
+  "utime";
+  "utimensat";
+  "utimes";
+  "vfork";
+  "write";
+  "writev";
+]
+
+
 let run_strace_and_puppet manifest modulepath input puppet_out =
   let modulepath =
     match modulepath with
@@ -87,6 +137,8 @@ let run_strace_and_puppet manifest modulepath input puppet_out =
     "300";
     "-o";
     ("/dev/fd/" ^ fd_out);
+    "-e";
+    (String.concat "," syscalls);
     "-f";
     "puppet";
     "apply";
@@ -105,7 +157,7 @@ let run_strace_and_puppet manifest modulepath input puppet_out =
     in
     let fd = Unix.openfile out [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC] 0o640 in
     let _ = Unix.dup2 fd Unix.stdout in
-    let _ = Unix.dup2 fd Unix.stderr in
+    let _ = Unix.dup2 Unix.stdout Unix.stderr in
     let _ = Unix.close fd in
     ignore (Unix.execv prog args);
     exit 254; (* We should never reach here. *)
