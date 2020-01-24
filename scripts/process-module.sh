@@ -28,12 +28,14 @@ done
 shift $(($OPTIND - 1));
 
 
+mkdir -p $modulepath
 if [ -z $module ]; then
   # Run script in interactive mode for debugging purposes.
   bash
   exit 0
 fi
 
+sudo chown -R fsmove:fsmove /home/fsmove/data
 
 if [ "$iterations" -lt 1 ]; then
   echo "You must provide a number greater than 1"
@@ -74,7 +76,7 @@ function gen_catalog()
 
   # Get compiled catalog.
   sudo puppet catalog find production |
-  tail -n +2 > $basedir/$module.json
+  sudo tail -n +2 > $basedir/$module.json
 
   return $?
 }
@@ -90,7 +92,7 @@ function apply_catalog()
 
   # Execute puppet script with timeout 10 minutes in stand-alone mode.
   if [ $with_strace -eq 0 ]; then
-    echo "Applying Puppet catalog without strace..."
+    echo "Applying module $module without strace..."
     timeout -s KILL ${timeout}m sudo puppet apply $HOME/init.pp \
         --debug \
         --evaltrace \
@@ -98,16 +100,19 @@ function apply_catalog()
     grep -oP 'Notice: Applied catalog in [0-9]+.[0-9]+' |
     sed 's/Notice: Applied catalog in //g' > $basedir/application.time
   else
-    echo "Applying Puppet catalog with strace..."
-    sudo strace -s 300 \
-        -e "$(tr -s '\r\n' ',' < $HOME/syscalls.txt | sed -e 's/,$/\n/')" \
-        -o $basedir/$module.strace \
-        -f puppet apply $HOME/init.pp \
-        --debug \
-        --evaltrace \
-        --modulepath $modulepath &
-    pid=$!
-    timeout -s KILL ${timeout}m polling.sh $pid $basedir/$module.strace
+    # Applying Puppet catalog with fsmove...
+    echo "Applying module $module with FSMove..."
+    sudo fsmove -print-stats \
+      -mode online \
+      -manifest $HOME/init.pp \
+      -trace-file $basedir/$module.strace \
+      -catalog $basedir/$module.json \
+      -package-notify \
+      -modulepath $modulepath > $basedir/$module.faults 2> $basedir/err
+    if [ $? -ne 0 ]; then
+      return 2
+    fi
+    rm $basedir/err
     cat $basedir/$module.strace |
     grep -oP 'Notice: Applied catalog in [0-9]+.[0-9]+' |
     sed 's/Notice: Applied catalog in //g' > $basedir/application.time
@@ -121,15 +126,14 @@ function analyze_traces()
   module=$1
   iterations=$2
 
-  # Remove the last line
-  sed -i '$ d' $basedir/$module.strace
-
   # Compute trace size in MB.
   stat $basedir/$module.strace |
   grep -oP 'Size: \K([0-9]+)' > $basedir/$module.size
 
   set +e
 
+  # This step is needed to compute the time spent on trace analysis
+  # and fault detection.
   echo "Detecting missing ordering relationships and notifiers..."
   if [ ! -f $basedir/$module.times ]; then
     eval `opam config env`
@@ -139,13 +143,13 @@ function analyze_traces()
         -mode offline \
         -package-notify \
         -catalog $basedir/$module.json \
-        -trace-file $basedir/$module.strace > $basedir/output 2> $basedir/err
+        -trace-file $basedir/$module.strace > tmp 2>&1
       if [ $? -ne 0 ]; then
         return 2
       fi
-      cat $basedir/output |
+      cat tmp |
       grep -oP 'Analysis time: \K([0-9\.]+)' >> $basedir/$1.times
-      rm $basedir/err
+      rm tmp
     done
   fi
   return 0
