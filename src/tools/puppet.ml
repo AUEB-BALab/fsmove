@@ -241,8 +241,8 @@ let filter_conflict x y =
   (String.equal "File[/var]" x || String.equal "File[/var]" y) ||
   (String.equal "File[/etc]" x || String.equal "File[/etc]" y) ||
   (String.equal "File[/usr]" x || String.equal "File[/usr]" y) ||
-  (Util.check_prefix "Apt_key" x && String.equal "File[/etc/apt/apt.conf.d/15update-stamp]" y) ||
-  (String.equal "File[/etc/apt/apt.conf.d/15update-stamp]" x && Util.check_prefix "Apt_key" y) ||
+  (Util.check_prefix "Apt_key" x && (Util.string_contains y "apt.conf.d")) ||
+  (Util.check_prefix "Apt_key" y && (Util.string_contains x "apt.conf.d")) ||
   (String.equal "Package[apt-transport-https]" x || String.equal "Package[apt-transport-https]" y)
 
 
