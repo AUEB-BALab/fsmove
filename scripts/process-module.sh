@@ -75,7 +75,7 @@ function gen_catalog()
   sudo cp -r $modulepath $production_dir
 
   # Get compiled catalog.
-  sudo puppet catalog find production |
+  sudo puppet catalog find production 2> /dev/null |
   sudo tail -n +2 > $basedir/$module.json
 
   return $?
