@@ -50,7 +50,6 @@ RUN sudo apt install procps -y
 
 # Add project files
 # Setup the environment
-ADD ./syscalls.txt ${HOME}/syscalls.txt
 ADD ./scripts ${SCRIPTS_DIR}
 
 RUN mkdir ${PROJECT_SRC} 
