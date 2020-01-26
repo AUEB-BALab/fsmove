@@ -72,29 +72,29 @@ let puppet_ex catalog options =
 let () =
   let open Core.Command.Let_syntax in
   Core.Command.basic
-    ~summary:"Applies a Puppet Manifest and collects its system call trace."
+    ~summary:"Applies a Puppet manifest and collects its system call trace."
     [%map_open
     let catalog =
       flag "catalog" (required string)
-      ~doc:"Path to compiled catalog of manifest."
+      ~doc:"Path to the compiled catalog of Puppet manifest."
     and mode =
       flag "mode" (required (Arg_type.create mode_of_string))
       ~doc: "Analysis mode; either online or offline"
     and manifest =
       flag "manifest" (optional string)
-      ~doc: "Path to the manifest that we need to apply. (Avaiable only when mode is 'online')"
+      ~doc: "Path to the entrypoint manifest that we need to apply. (Avaiable only when mode is 'online')"
     and modulepath =
       flag "modulepath" (optional string)
       ~doc: "Path to the directory of the Puppet modules. (Available only when mode is 'online')"
     and trace_file =
       flag "trace-file" (optional string)
-      ~doc:"Path to trace file produced by the 'strace' tool. (Available only when mode is 'offline')"
+      ~doc:"Path to the trace file produced by the 'strace' tool."
     and dump_puppet_out =
       flag "dump-puppet-out" (optional string)
-      ~doc: "File to store output from puppet execution (for debugging only)"
+      ~doc: "File to store output from Puppet execution (for debugging only)"
     and graph_format =
       flag "graph-format" (optional_with_default Dependency_graph.Dot (Arg_type.create format_of_string))
-      ~doc: "Format for storing the dependency graph of the provided Puppet manifests."
+      ~doc: "Format for storing the dependency graph of the provided Puppet manifest."
     and graph_file =
       flag "graph-file" (optional string)
       ~doc: "File to store the dependency graph inferred by the compiled catalog."
