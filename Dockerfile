@@ -2,7 +2,7 @@ ARG IMAGE_NAME=debian:stretch
 FROM ${IMAGE_NAME}
 
 
-RUN apt-get update
+RUN apt-get update && apt upgrade -y
 RUN apt-get install -y \
     wget \
     lsb-release \
