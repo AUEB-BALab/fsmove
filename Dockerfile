@@ -66,6 +66,7 @@ WORKDIR ${PROJECT_SRC}
 RUN eval `opam config env` && dune runtest && dune build -p fsmove && dune install
 
 USER root
+RUN apt update
 #RUN sudo cp -r ${HOME}/.opam /root/
 # Puppet conf
 RUN echo "[main]" > ${PUPPET_CONF_FILE} && \
