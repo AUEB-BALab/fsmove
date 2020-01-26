@@ -101,6 +101,38 @@ Ran: 64 tests in: 0.11 seconds.
 OK
 ```
 
+## Usage
+
+```
+> fsmove -help
+Applies a Puppet manifest and collects its system call trace.
+
+  fsmove
+
+=== flags ===
+
+  -catalog Path            to the compiled catalog of Puppet manifest.
+  -mode Analysis           mode; either online or offline
+  [-dump-puppet-out File]  to store output from Puppet execution (for debugging
+                           only)
+  [-graph-file File]       to store the dependency graph inferred by the
+                           compiled catalog.
+  [-graph-format Format]   for storing the dependency graph of the provided
+                           Puppet manifest.
+  [-manifest Path]         to the entrypoint manifest that we need to apply.
+                           (Avaiable only when mode is 'online')
+  [-modulepath Path]       to the directory of the Puppet modules. (Available
+                           only when mode is 'online')
+  [-package-notify]        Consider missing notifiers from packages to services
+  [-print-stats]           Print stats about execution and analysis
+  [-trace-file Path]       to the trace file produced by the 'strace' tool.
+  [-build-info]            print info about this build and exit
+  [-version]               print the version of this build and exit
+  [-help]                  print this help text and exit
+                           (alias: -?)
+
+```
+
 ## Run and analyze a real-world Puppet module
 
 To run and analyze a real-world Puppet module
