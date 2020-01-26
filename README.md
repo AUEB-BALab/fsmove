@@ -186,7 +186,7 @@ Analysis time: 0.292564153671
 ```
 
 In particular,
-`FSMove` detects one missing ordering relationship (MOR)
+`FSMoVe` detects one missing ordering relationship (MOR)
 between the Puppet resource `Exec[download]`
 (defined in the `install.pp` file, line 7),
 and the resource `Package[al-agent]`
@@ -197,7 +197,7 @@ Specifically,
 `Exec[download]` produces the file `/tmp/al-agent`,
 while `Package[al-agent]` consumes the same file.
 For debugging purposes,
-`FSMove` also reports the system call
+`FSMoVe` also reports the system call
 and the corresponding line in
 the resulting `alertlogin-al_agent.strace` file.
 For example, `( open at line 54333 )`

@@ -101,7 +101,7 @@ function apply_catalog()
     sed 's/Notice: Applied catalog in //g' > $basedir/application.time
   else
     # Applying Puppet catalog with fsmove...
-    echo "Applying module $module with FSMove..."
+    echo "Applying module $module with FSMoVe..."
     sudo fsmove -print-stats \
       -mode online \
       -manifest $HOME/init.pp \
