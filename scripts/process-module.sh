@@ -3,7 +3,7 @@
 basedir=${HOME}/data
 modulepath=${HOME}/.puppet/etc/code/modules
 install_module="no"
-timeout=6
+timeout=30
 with_strace=0
 iterations=1
 production_dir=/etc/puppet/code/environments/production
