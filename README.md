@@ -29,11 +29,6 @@ relationships (as inferred from the analysis of traces)
 hold with respect to the dependency graph.
 
 
-The full decription of this approach will appear at the proceedings of the upcoming
-[International Conference of Software Enginerring](https://conf.researchr.org/track/icse-2020/).
-A pre-print is also [available](https://dimitro.gr/assets/papers/SMS20.pdf).
-
-
 ## Building
 
 ### Build Docker Images
