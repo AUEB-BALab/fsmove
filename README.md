@@ -205,3 +205,15 @@ indicates that `Exec[download]` produced
 `/tmp/al-agent` by calling the `open()` system call
 as it appears at line 54333 of
 the corresponding `strace` file.
+
+## Publications
+
+The tool is described in detail in the following paper.
+
+* Thodoris Sotiropoulos, Dimitris Mitropoulos, and Diomidis Spinellis. 2020.
+  [Practical Fault Detection in Puppet Programs](https://dl.acm.org/doi/pdf/10.1145/3377811.3380384).
+  In 42nd International Conference on Software Engineering (ICSE ’20), May 23–29, 2020, Seoul, Republic of Korea.
+  ACM, New York, NY, USA, 12 pages. 
+  ([doi:10.1145/3377811.3380384](https://doi.org/10.1145/3377811.3380384))
+
+The research artifact associated with this tool can be found at https://github.com/theosotr/fsmove-eval.
