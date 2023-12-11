@@ -24,7 +24,7 @@ exception DomainError of string
 module INodeT = Map.Make(
   struct
     type t = (int * string)
-    let compare = Core.compare
+    let compare = Core.Poly.compare
   end
 )
 
@@ -32,7 +32,7 @@ module INodeT = Map.Make(
 module RelSet = Set.Make(
   struct
     type t = Syntax.eff
-    let compare = Core.compare
+    let compare = Core.Poly.compare
   end
 )
 

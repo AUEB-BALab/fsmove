@@ -44,7 +44,7 @@ type graph_format =
 module EdgeSet = Set.Make(
   struct
     type t = (string * relationship)
-    let compare = Core.compare
+    let compare = Core.Poly.compare
   end
 )
 
@@ -52,7 +52,7 @@ module EdgeSet = Set.Make(
 module LabelSet = Set.Make(
   struct
     type t = relationship
-    let compare = Core.compare
+    let compare = Core.Poly.compare
   end
 )
 

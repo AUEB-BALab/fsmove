@@ -115,4 +115,4 @@ let () =
        Puppet_ex.print_stats = print_stats;
        Puppet_ex.package_notify = package_notify;
        Puppet_ex.modulepath = modulepath;} |> puppet_ex catalog
-    ] |> Core.Command.run
+    ] |> Command_unix.run

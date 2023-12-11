@@ -23,8 +23,11 @@ module Strings = Map.Make(String)
 module Ints = Map.Make(struct type t = int let compare = Core.compare end)
 module StringPair = Map.Make(
     struct
-        type t = (string * string)
-        let compare = Core.compare
+        type t = string * string
+        let compare (x0, y0) (x1, y1) =
+          match String.compare x0 x1 with
+          | 0 -> String.compare y0 y1
+          | c -> c
     end
 )
 module StringSet = Set.Make(String)

@@ -23,7 +23,7 @@ open Syntax
 module AbPair = Map.Make(
   struct
     type t = (Dependency_graph.abstraction_desc * Dependency_graph.abstraction_desc)
-    let compare = Core.compare
+    let compare = Core.Poly.compare
   end
 )
 

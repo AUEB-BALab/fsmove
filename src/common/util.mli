@@ -23,7 +23,7 @@ module Ints : Map.S with type key = int
 (** A module that implements a map of integers. *)
 
 
-module StringPair : Map.S with type key = (string * string)
+module StringPair : Map.S with type key = string * string
 (** A module that implements a map of pairs of strings. *)
 
 

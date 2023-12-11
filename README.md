@@ -59,18 +59,18 @@ install some necessary packages first
 apt install opam m4
 ```
 Then, install OCaml compiler
-(version 4.0.5)
+(version 5.1.0)
 by running
 ```bash
 opam init -y
 eval `opam config env`
-opam switch 4.05.0
+opam switch 5.1.0
 ```
 
 Next, install some required opam packages used by `FSMoVe`
 ```bash
 eval `opam config env`
-opam install -y ppx_jane core yojson dune ounit fd-send-recv fpath
+opam install -y ppx_jane core core_unix camlp-streams yojson dune ounit fd-send-recv fpath
 ```
 
 Finally, build `FSMoVe` by running

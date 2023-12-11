@@ -15,7 +15,7 @@
  *)
 
 
-open Pervasives
+open Stdlib
 
 
 type mode =
@@ -167,7 +167,7 @@ let run_strace_and_puppet manifest modulepath input puppet_out =
       so that it can be read by the parent process. *)
     let msg = string_of_unix_err err call params in
     begin
-      ignore (Unix.write input msg 0 (String.length msg));
+      ignore (Unix.write input (Bytes.of_string msg) 0 (String.length msg));
       Unix.close input;
       exit child_failed_status_code;
     end
