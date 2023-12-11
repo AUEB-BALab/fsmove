@@ -42,13 +42,12 @@ To build the Docker image locally, run
 docker build -t fsmove --build-arg IMAGE_NAME=<base-image> .
 ```
 where `<base-image>` is the base Docker used to set up
-the environment. We have tested our Docker scripts
-on `debian:stretch` and `ubuntu:18.04` base images.
-Therefore,
-to build the Docker image on top of Debian Stretch,
+the environment.
+For example,
+to build the Docker image on top of Debian Buster,
 run
 ```bash
-docker build -t fsmove --build-arg IMAGE_NAME=debian:stretch .
+docker build -t fsmove --build-arg IMAGE_NAME=debian:buster .
 ```
 
 ### Building from source
