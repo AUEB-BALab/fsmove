@@ -1,4 +1,4 @@
-ARG IMAGE_NAME=debian:stretch
+ARG IMAGE_NAME=debian:buster
 FROM ${IMAGE_NAME}
 
 
@@ -14,8 +14,8 @@ RUN apt-get install -y \
     vim
 
 RUN codename=$(lsb_release -c | sed -e 's/Codename:\s\+//g') && \
-    wget https://apt.puppetlabs.com/puppet5-release-$codename.deb && \
-    dpkg -i puppet5-release-$codename.deb && \
+    wget https://apt.puppetlabs.com/puppet8-release-$codename.deb && \
+    dpkg -i puppet8-release-$codename.deb && \
     apt-get install -y puppet git-core
 
 
@@ -36,14 +36,17 @@ WORKDIR ${HOME}
 
 WORKDIR ${HOME}
 # Setup OCaml compiler
-RUN opam init -y && \
-    eval `opam config env` && \
-    opam switch 4.05.0
+RUN opam init -y --disable-sandboxing && \
+    eval $(opam env) && \
+    opam switch create 5.1.0 && \
+    opam switch 5.1.0
 
+RUN eval $(opam env)
 
 # Install OCaml packages
 RUN eval `opam config env` && \
-    opam install -y ppx_jane core yojson dune ounit fd-send-recv fpath
+    opam install -y ppx_jane core core_unix camlp-streams yojson dune \
+        ounit fd-send-recv fpath
 
 
 RUN sudo apt install procps -y
@@ -76,7 +79,7 @@ RUN echo "[main]" > ${PUPPET_CONF_FILE} && \
     echo "rundir=/var/run/puppet" >> ${PUPPET_CONF_FILE}
 
 
-RUN cp ${HOME}/.opam/4.05.0/bin/fsmove /usr/local/bin
+RUN cp ${HOME}/.opam/5.1.0/bin/fsmove /usr/local/bin
 USER fsmove
 WORKDIR ${HOME}
 

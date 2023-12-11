@@ -147,7 +147,7 @@ For example, to run and analyze the [`alertlogic-al_agents`](https://forge.puppe
 docker run --rm -ti \
   --security-opt seccomp:unconfined \
   -v <output-dir>:/home/fsmove/data fsmove \
-  -m alertlogic-al_agents-i latest -s
+  -m alertlogic-al_agents -i 0.2.0 -s
 ```
 A few explanations:
 
